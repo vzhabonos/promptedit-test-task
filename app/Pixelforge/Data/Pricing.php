@@ -42,6 +42,21 @@ final readonly class Pricing
         );
     }
 
+    /** @return array<string, mixed> The API's pricing shape, so fromArray() can rebuild it */
+    public function toArray(): array
+    {
+        return [
+            'rates' => $this->rates->toArray(),
+            'tokens' => [
+                'characters_per_text_token' => $this->charactersPerTextToken,
+                'text_token_variance' => $this->textTokenVariance->toString(),
+                'per_reference_image' => $this->tokensPerReferenceImage,
+                'output' => $this->outputTokens,
+                'reasoning' => $this->reasoningTokens,
+            ],
+        ];
+    }
+
     /**
      * The fewest and the most tokens a generation can be billed for. Output
      * and reference image tokens are exact; text and reasoning tokens are
