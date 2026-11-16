@@ -2,9 +2,11 @@
 
 namespace App\Pixelforge;
 
+use App\Billing\Money;
 use App\Models\Generation;
 use App\Pixelforge\Data\GenerationData;
 use App\Pixelforge\Data\Pricing;
+use Carbon\CarbonInterface;
 use Illuminate\Container\Attributes\Config;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
@@ -48,6 +50,30 @@ class PixelforgeClient
     public function pricing(): Pricing
     {
         return Pricing::fromArray($this->send('GET', 'pricing'));
+    }
+
+    /**
+     * What Pixelforge billed this API key per UTC day (by completion date).
+     *
+     * @return array<string, array{generations: int, cost: int}> Keyed by Y-m-d; cost in nanodollars
+     */
+    public function usage(CarbonInterface $from, CarbonInterface $to): array
+    {
+        $usage = $this->send('GET', 'usage', [
+            'start_date' => $from->toDateString(),
+            'end_date' => $to->toDateString(),
+        ]);
+
+        $days = [];
+
+        foreach ($usage['data'] as $day) {
+            $days[$day['date']] = [
+                'generations' => (int) $day['generations'],
+                'cost' => Money::fromDecimal($day['cost_usd']),
+            ];
+        }
+
+        return $days;
     }
 
     /**

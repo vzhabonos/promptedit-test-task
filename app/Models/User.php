@@ -35,6 +35,11 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
+    /** @var array<string, mixed> */
+    protected $attributes = [
+        'is_admin' => false,
+    ];
+
     /**
      * Get the attributes that should be cast.
      *

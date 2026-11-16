@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
 import CreditBalance from '@/components/CreditBalance.vue';
 import NavFooter from '@/components/NavFooter.vue';
@@ -14,7 +15,19 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { footerNavItems, homeUrl, mainNavItems } from '@/lib/navigation';
+import {
+    adminNavItems,
+    footerNavItems,
+    homeUrl,
+    mainNavItems,
+} from '@/lib/navigation';
+
+const page = usePage();
+const navItems = computed(() =>
+    page.props.auth.user?.is_admin
+        ? [...mainNavItems, ...adminNavItems]
+        : mainNavItems,
+);
 </script>
 
 <template>
@@ -32,7 +45,7 @@ import { footerNavItems, homeUrl, mainNavItems } from '@/lib/navigation';
         </SidebarHeader>
 
         <SidebarContent>
-            <NavMain :items="mainNavItems" />
+            <NavMain :items="navItems" />
         </SidebarContent>
 
         <SidebarFooter>
