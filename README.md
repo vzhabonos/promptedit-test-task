@@ -26,7 +26,7 @@ Open http://localhost, register, buy some (fake) credits and generate.
 
 **Webhooks locally:** Pixelforge only calls public URLs, so expose the app with a tunnel
 (e.g. `cloudflared tunnel --url http://localhost`) and set
-`https://<tunnel>/webhooks/pixelforge` as the webhook URL of your *local* API key.
+`https://<tunnel>/webhooks/pixelforge` as the webhook URL of your _local_ API key.
 Without a tunnel the app still works: generations are polled once their webhooks are overdue.
 
 **Operators:** `./vendor/bin/sail artisan app:make-admin you@example.com` unlocks the spend report.
@@ -45,18 +45,19 @@ pixelforge:reconcile (every minute, overdue only) ──GET /v1/generations/{id}
 SubmitGeneration (the 202 response) ────────────────────────────────────────────────┘
 ```
 
-| Where | What |
-|---|---|
-| `app/Billing` | `Money` (nanodollars), `CostCalculator` (the only place tokens become money), `GenerationBilling`, `CreditBalance` |
-| `app/Pixelforge` | `PixelforgeClient` (the only HTTP entry point), `PixelforgeException`, `WebhookSignature`, `PricingCache`, typed API data |
-| `app/Actions` | `CreateGeneration`, `SyncGeneration`, `FailGeneration` |
-| `app/Jobs/SubmitGeneration.php` | Submission with retries |
-| `app/Console/Commands/ReconcileGenerations.php` | Polling fallback for missed webhooks |
-| `app/Reports/SpendReport.php` | Admin report, reconciled with `GET /v1/usage` |
+| Where                                           | What                                                                                                                      |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `app/Billing`                                   | `Money` (nanodollars), `CostCalculator` (the only place tokens become money), `GenerationBilling`, `CreditBalance`        |
+| `app/Pixelforge`                                | `PixelforgeClient` (the only HTTP entry point), `PixelforgeException`, `WebhookSignature`, `PricingCache`, typed API data |
+| `app/Actions`                                   | `CreateGeneration`, `SyncGeneration`, `FailGeneration`                                                                    |
+| `app/Jobs/SubmitGeneration.php`                 | Submission with retries                                                                                                   |
+| `app/Console/Commands/ReconcileGenerations.php` | Polling fallback for missed webhooks                                                                                      |
+| `app/Reports/SpendReport.php`                   | Admin report, reconciled with `GET /v1/usage`                                                                             |
 
 ## Decisions
 
 ### Money
+
 - **Integer nanodollars everywhere** (`bigint`). Pixelforge reports exact 9-decimal amounts, so every
   provider cost is a whole number of nanodollars. Decimal strings are parsed with `brick/math`; there
   are no floats. `Money::fromDecimal` refuses to round, so an unexpected sub-nanodollar amount fails
@@ -74,6 +75,7 @@ SubmitGeneration (the 202 response) ──────────────�
   Users see what they paid. Pixelforge's own cost is operator-only.
 
 ### Exactly-once billing
+
 - **One code path.** Every Pixelforge generation object (the create response, an idempotent
   replay, a webhook, a poll) goes through `SyncGeneration`. It runs in a transaction and locks the
   row (`SELECT … FOR UPDATE`).
@@ -91,29 +93,32 @@ SubmitGeneration (the 202 response) ──────────────�
   on it, Pixelforge wins, and the generation is billed as it really happened.
 
 ### Robustness
+
 - **Submission is a queued job.** The Idempotency-Key is our generation's ULID, so retries can never
   create or bill a second generation.
-  - **Retried:** rate limit, concurrency limit (3 per account), `503 overloaded`, 5xx and network
-    errors. The delay is `max(Retry-After, 2^attempt capped at 60s)`, for up to 10 attempts (about
-    5 minutes).
-  - **Fail immediately, free, with a readable message:** content policy, validation, daily quota,
-    reused key and auth errors.
-  - **Crash:** a job crash (`failed()`) also fails the generation, so nothing is stuck as pending.
+    - **Retried:** rate limit, concurrency limit (3 per account), `503 overloaded`, 5xx and network
+      errors. The delay is `max(Retry-After, 2^attempt capped at 60s)`, for up to 10 attempts (about
+      5 minutes).
+    - **Fail immediately, free, with a readable message:** content policy, validation, daily quota,
+      reused key and auth errors.
+    - **Crash:** a job crash (`failed()`) also fails the generation, so nothing is stuck as pending.
 - **Missed webhooks:** `pixelforge:reconcile` polls queued/processing generations that have been
   quiet for 2+ minutes, at most 10 per run (the API allows 60 requests a minute).
 - **Signatures:** HMAC-SHA256 over `t.body`, compared in constant time. Timestamps older than 5
   minutes are rejected (replays). The route sits outside the web middleware (no session/CSRF).
 
 ### Balances (stretch)
+
 - `balance = purchases − Σ charged_cost − Σ estimated_cost_max of running generations`, computed
   from the records that already exist, with no separate ledger to drift out of sync. The "hold" is
   implicit and disappears when the generation finishes.
 - **Concurrent submits:** submitting locks the user row, so two submits at once can't spend the
   same credits.
-- **Blocking:** a generation is blocked unless the balance covers its *maximum* cost.
+- **Blocking:** a generation is blocked unless the balance covers its _maximum_ cost.
 - **Purchases** are simulated ($5/$10/$25).
 
 ### Admin report (stretch)
+
 - Charged amount, provider cost and profit per **UTC day of completion** and per user. This is the
   day Pixelforge bills on, not the creation day.
 - **Reconciliation:** each day is compared with `GET /v1/usage` (cost and count, to the
@@ -121,6 +126,7 @@ SubmitGeneration (the 202 response) ──────────────�
 - **Scope:** usage is per API key, so each environment reconciles against its own key.
 
 ### Smaller choices
+
 - **Sign-in:** registration and password reset only. No email verification, so reviewers can sign
   up instantly.
 - **Accounts:** deleting an account keeps its generations (`user_id` is set to null), so billing
@@ -134,14 +140,14 @@ SubmitGeneration (the 202 response) ──────────────�
 
 Put these anywhere in a prompt:
 
-| Keyword | What happens |
-|---|---|
-| `[fail]` | Accepted, then fails. Shown as failed and not charged |
-| `[slow]` | Takes 60–90s |
-| `[duplicate]` | Every webhook arrives twice. Billed once |
-| `[overloaded]` | Rejected at submission with `503 overloaded` |
-| `[blocked]` | Content policy rejection. Fails immediately and free |
-| `[succeed]` | Never fails at random |
+| Keyword        | What happens                                          |
+| -------------- | ----------------------------------------------------- |
+| `[fail]`       | Accepted, then fails. Shown as failed and not charged |
+| `[slow]`       | Takes 60–90s                                          |
+| `[duplicate]`  | Every webhook arrives twice. Billed once              |
+| `[overloaded]` | Rejected at submission with `503 overloaded`          |
+| `[blocked]`    | Content policy rejection. Fails immediately and free  |
+| `[succeed]`    | Never fails at random                                 |
 
 `[overloaded]` is retried with backoff until the attempts run out, then the generation fails and is free.
 
@@ -152,8 +158,8 @@ Put these anywhere in a prompt:
    **Deploy command:** `php artisan migrate --force`.
 3. **Background work:** enable the **scheduler**, and add a **queue worker** (`php artisan queue:work`).
 4. **Environment:**
-   - `APP_NAME`
-   - `PIXELFORGE_API_KEY` / `PIXELFORGE_WEBHOOK_SECRET`: use a **separate** Pixelforge key for production.
-   - `QUEUE_CONNECTION=database`, `CACHE_STORE=database`
+    - `APP_NAME`
+    - `PIXELFORGE_API_KEY` / `PIXELFORGE_WEBHOOK_SECRET`: use a **separate** Pixelforge key for production.
+    - `QUEUE_CONNECTION=database`, `CACHE_STORE=database`
 5. **Webhook:** in the Pixelforge dashboard, set that key's webhook URL to `https://<your-app>/webhooks/pixelforge`.
 6. **Operator:** `php artisan app:make-admin you@example.com`.
