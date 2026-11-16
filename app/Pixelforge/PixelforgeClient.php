@@ -36,21 +36,22 @@ class PixelforgeClient
         }
 
         return GenerationData::fromArray(
-            $this->send('post', 'generations', $payload, ['Idempotency-Key' => $generation->id]),
+            $this->send('POST', 'generations', $payload, ['Idempotency-Key' => $generation->id]),
         );
     }
 
     public function getGeneration(string $pixelforgeId): GenerationData
     {
-        return GenerationData::fromArray($this->send('get', "generations/{$pixelforgeId}"));
+        return GenerationData::fromArray($this->send('GET', "generations/{$pixelforgeId}"));
     }
 
     public function pricing(): Pricing
     {
-        return Pricing::fromArray($this->send('get', 'pricing'));
+        return Pricing::fromArray($this->send('GET', 'pricing'));
     }
 
     /**
+     * @param  'GET'|'POST'  $method  Upper case: HTTP methods are case-sensitive.
      * @param  array<string, mixed>  $data
      * @param  array<string, string>  $headers
      * @return array<string, mixed>
@@ -64,7 +65,7 @@ class PixelforgeClient
                 ->acceptJson()
                 ->connectTimeout(5)
                 ->timeout(15)
-                ->send($method, $path, $method === 'get' ? ['query' => $data] : ['json' => $data]);
+                ->send($method, $path, $method === 'GET' ? ['query' => $data] : ['json' => $data]);
         } catch (ConnectionException $exception) {
             throw PixelforgeException::connectionFailed($exception);
         }

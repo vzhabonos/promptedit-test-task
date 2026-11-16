@@ -32,7 +32,8 @@ it('submits with an idempotency key and our id as metadata', function () {
 
     runSubmit($generation);
 
-    Http::assertSent(fn (Request $request) => $request->hasHeader('Idempotency-Key', $generation->id)
+    Http::assertSent(fn (Request $request) => $request->method() === 'POST'
+        && $request->hasHeader('Idempotency-Key', $generation->id)
         && $request->hasHeader('Authorization')
         && $request['metadata'] === ['generation_id' => $generation->id]
         && $request['reference_images'] === ['https://example.com/style.png']);
