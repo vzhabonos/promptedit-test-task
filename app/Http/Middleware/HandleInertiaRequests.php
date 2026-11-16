@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Billing\CreditBalance;
+use App\Billing\Money;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -41,6 +43,9 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
+            'balance' => fn (): ?string => $request->user()
+                ? Money::format(app(CreditBalance::class)->available($request->user()))
+                : null,
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }

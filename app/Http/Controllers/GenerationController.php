@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Actions\CreateGeneration;
 use App\Billing\CostCalculator;
+use App\Billing\CreditBalance;
+use App\Billing\InsufficientCredits;
+use App\Billing\Money;
 use App\Enums\ImageQuality;
 use App\Enums\ImageSize;
 use App\Http\Requests\Generations\EstimateGenerationRequest;
@@ -64,6 +67,8 @@ class GenerationController extends Controller
                 $request->quality(),
                 $request->referenceImages(),
             );
+        } catch (InsufficientCredits $exception) {
+            throw ValidationException::withMessages(['form' => $exception->getMessage()]);
         } catch (PixelforgeException) {
             throw ValidationException::withMessages(['form' => self::PRICING_UNAVAILABLE]);
         }
@@ -73,7 +78,7 @@ class GenerationController extends Controller
         return to_route('generations.index');
     }
 
-    public function estimate(EstimateGenerationRequest $request, CostCalculator $calculator, PricingCache $pricing): JsonResponse
+    public function estimate(EstimateGenerationRequest $request, CostCalculator $calculator, PricingCache $pricing, CreditBalance $balance): JsonResponse
     {
         try {
             $estimate = $calculator->estimate(
@@ -87,6 +92,12 @@ class GenerationController extends Controller
             return response()->json(['message' => self::PRICING_UNAVAILABLE], 503);
         }
 
-        return response()->json($estimate->toArray());
+        $available = $balance->available($request->user());
+
+        return response()->json([
+            ...$estimate->toArray(),
+            'balance' => Money::format($available),
+            'affordable' => $available >= $estimate->maxCharge,
+        ]);
     }
 }

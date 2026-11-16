@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import { Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import { Spinner } from '@/components/ui/spinner';
 import { formatMoneyRange, formatRange } from '@/lib/format';
+import { index as credits } from '@/routes/credits';
 import type { CostEstimate, TokenType } from '@/types';
 
 const props = defineProps<{
@@ -69,6 +71,20 @@ const price = computed(() =>
                 You pay what Pixelforge charges plus {{ markupPercent }}%, for
                 the tokens actually used. You'll never pay more than
                 {{ estimate.max }}. Failed generations are free.
+            </p>
+
+            <p
+                v-if="!estimate.affordable"
+                class="mt-3 rounded-md bg-amber-500/10 px-3 py-2 text-sm text-amber-800 dark:text-amber-200"
+            >
+                Your balance is {{ estimate.balance }}, which doesn't cover the
+                maximum of {{ estimate.max }}.
+                <Link :href="credits()" class="font-medium underline"
+                    >Buy credits</Link
+                >
+            </p>
+            <p v-else class="mt-3 text-xs text-muted-foreground">
+                Your balance: {{ estimate.balance }}
             </p>
 
             <dl class="mt-4 space-y-2 border-t pt-4 text-sm">

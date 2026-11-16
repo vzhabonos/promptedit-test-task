@@ -19,6 +19,8 @@ declare module '@inertiajs/core' {
         sharedPageProps: {
             name: string;
             auth: Auth;
+            /** The signed-in user's available credits, formatted (e.g. "$9.53"). */
+            balance: string | null;
             sidebarOpen: boolean;
             [key: string]: unknown;
         };

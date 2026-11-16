@@ -30,7 +30,7 @@ const hasRunning = computed(() =>
 );
 const { start, stop } = usePoll(
     3000,
-    { only: ['generations'] },
+    { only: ['generations', 'balance'] },
     { autoStart: false },
 );
 watch(hasRunning, (running) => (running ? start() : stop()), {

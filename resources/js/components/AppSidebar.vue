@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
 import AppLogo from '@/components/AppLogo.vue';
+import CreditBalance from '@/components/CreditBalance.vue';
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
@@ -35,6 +36,7 @@ import { footerNavItems, homeUrl, mainNavItems } from '@/lib/navigation';
         </SidebarContent>
 
         <SidebarFooter>
+            <CreditBalance />
             <NavFooter :items="footerNavItems" />
             <NavUser />
         </SidebarFooter>

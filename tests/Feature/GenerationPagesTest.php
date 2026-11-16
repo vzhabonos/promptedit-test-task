@@ -2,6 +2,7 @@
 
 use App\Enums\GenerationStatus;
 use App\Jobs\SubmitGeneration;
+use App\Models\CreditPurchase;
 use App\Models\Generation;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -32,6 +33,7 @@ function fakePricing(): void
 
 it('queues a generation with its estimated price range', function () {
     fakePricing();
+    CreditPurchase::factory()->for($this->user)->create();
     $this->actingAs($this->user)
         ->post('/generations', [
             'prompt' => '0123456789',

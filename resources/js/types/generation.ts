@@ -33,6 +33,9 @@ export type CostEstimate = {
     min: string;
     max: string;
     tokens: Record<TokenType, { min: number; max: number }>;
+    /** The user's available credits, and whether they cover the maximum. */
+    balance: string;
+    affordable: boolean;
 };
 
 export type Option = { value: string; label: string };

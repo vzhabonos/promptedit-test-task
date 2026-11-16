@@ -237,7 +237,10 @@ const optionClass = (selected: boolean) =>
                     type="submit"
                     size="lg"
                     class="w-full"
-                    :disabled="form.processing"
+                    :disabled="
+                        form.processing ||
+                        estimator.response?.affordable === false
+                    "
                 >
                     <Spinner v-if="form.processing" />
                     <Sparkles v-else />
