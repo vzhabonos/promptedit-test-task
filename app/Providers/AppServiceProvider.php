@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use Carbon\CarbonImmutable;
+use Illuminate\Foundation\DevCommands;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
@@ -24,6 +25,9 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+
+        // `composer dev` also runs the scheduler, which polls overdue generations.
+        DevCommands::artisan('schedule:work', 'scheduler');
     }
 
     /**
