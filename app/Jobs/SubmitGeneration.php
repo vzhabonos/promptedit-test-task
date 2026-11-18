@@ -22,7 +22,7 @@ class SubmitGeneration implements ShouldQueue
 {
     use Queueable;
 
-    /** About five minutes of retrying in total; see backoff(). */
+    /** About five minutes of retrying in total; see retryDelay(). */
     public int $tries = 10;
 
     private const int MAX_BACKOFF_SECONDS = 60;
@@ -40,7 +40,7 @@ class SubmitGeneration implements ShouldQueue
             $sync->handle($client->createGeneration($this->generation));
         } catch (PixelforgeException $exception) {
             if ($exception->isRetryable() && $this->attempts() < $this->tries) {
-                $this->release($this->backoff($exception));
+                $this->release($this->retryDelay($exception));
 
                 return;
             }
@@ -66,7 +66,7 @@ class SubmitGeneration implements ShouldQueue
     }
 
     /** Wait at least as long as Pixelforge asks, backing off exponentially: 2, 4, 8 … 60 seconds. */
-    private function backoff(PixelforgeException $exception): int
+    private function retryDelay(PixelforgeException $exception): int
     {
         $exponential = min(2 ** $this->attempts(), self::MAX_BACKOFF_SECONDS);
 

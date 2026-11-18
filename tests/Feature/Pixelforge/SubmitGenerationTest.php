@@ -7,7 +7,9 @@ use GuzzleHttp\Promise\PromiseInterface;
 use Illuminate\Contracts\Queue\Job;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 
 uses(RefreshDatabase::class);
 
@@ -42,6 +44,13 @@ it('submits with an idempotency key and our id as metadata', function () {
     expect($generation->status)->toBe(GenerationStatus::Queued)
         ->and($generation->pixelforge_id)->toBe('gen_123')
         ->and($generation->rates)->toHaveKey('output_tokens', '40.00');
+});
+
+// The suite runs the sync queue, which never serializes jobs; production does.
+it('can be pushed onto a real queue', function () {
+    Queue::connection('database')->push(new SubmitGeneration(Generation::factory()->create()));
+
+    expect(DB::table('jobs')->count())->toBe(1);
 });
 
 it('retries limits and overloads, honouring Retry-After', function (string $code, int $status, int $retryAfter) {
